@@ -1,0 +1,10 @@
+{
+  "name": "Molkky",
+  "description": "Gestionnaire de score de Molkky",
+  "start_url": "/",
+  "background_color": "#3367D6",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "scope": "/",
+  "theme_color": "#3367D6"
+}

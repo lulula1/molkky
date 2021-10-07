@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html ng-app="molkky" ng-controller="MainCtrl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Molkky - {{status}}</title>
+  <link rel="manifest" href="/manifest.webmanifest">
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/sw.js').then(function(registration) {
+          console.log('ServiceWorker registration successful with scope: ', registration.scope);
+        }, function(err) {
+          console.log('ServiceWorker registration failed: ', err);
+        });
+      });
+    }
+  </script>
+  <script src="js/angular.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/dragdrop.js"></script>
+  <script id="langScript"></script>
+  <link rel="stylesheet" type="text/css" href="css/common.css">
+  <link rel="stylesheet" type="text/css" href="css/lobby_panel.css">
+  <link rel="stylesheet" type="text/css" href="css/game_panel.css">
+  <link rel="stylesheet" type="text/css" href="css/ending_panel.css">
+</head>
+<body>
+  <header>
+    <h1>{{lang.title}}</h1>
+    <h2>{{status}}</h2>
+    <div class="locale-selection">
+      <span>{{locales[locale]}}</span>
+      <ul>
+        <li ng-repeat="(localeCode, localeLabel) in locales" ng-click="setLocale(localeCode)" ng-hide="locale == localeCode">{{localeLabel}}</li>
+      </ul>
+    </div>
+  </header>
+  <!-- Lobby panel -->
+  <div id="lobby-panel" ng-show="game.status == 'lobby'" ng-drop="playerDrag">
+    <div id="selections">
+      <div id="team-selection">
+        <div>
+          <div class="team-container" ng-repeat="team in game.teams">
+            <div class="team" ng-style="{background: team.color.hex}" ng-drop="playerDrag">
+              <h2>{{team.name}}</h2>
+              <i class="close-cross" title="{{lang.removeTeam}}" ng-click="removeTeam($index)">&#10060;</i>
+              <ul class="player-list wh-sb">
+                <li class="no-player" ng-hide="team.players.length != 0">{{lang.noPlayer}}</li>
+                <li ng-repeat="player in team.players"><pre ng-drag="playerDrag">{{player}}</pre></li>
+              </ul>
+            </div>
+          </div>
+          <div class="team-container" ng-repeat="_ in range(MAX_TEAMS) track by $index" ng-hide="game.teams.length >= MAX_TEAMS - $index">
+            <div class="team no-team">
+              <h2>{{lang.noTeam}}</h2>
+            </div>
+          </div>
+        </div>
+        <button class="secondary-btn" ng-click="addTeam()">{{lang.addTeam}}</button>
+      </div>
+      <div id="player-selection">
+        <h2>{{lang.pendingPlayers}}</h2>
+        <hr />
+        <ul class="pending-players">
+          <li ng-repeat="player in pendingPlayers"><span><pre ng-drag="playerDrag">{{player}}</pre></span></li>
+          <li class="no-player" ng-show="pendingPlayers.length == 0">{{lang.noPlayer}}</li>
+        </ul>
+        <div class="player-management">
+          <form class="add-player" ng-submit="addPlayer()" ng-hide="players.length >= MAX_PLAYERS">
+            <input type="text" maxlength="30" placeholder="{{lang.addPlayerPlaceholder}}" title="{{lang.addPlayerPlaceholder}}" ng-model="newPlayerName" />
+            <input type="submit" value="{{lang.addPlayer}}" />
+          </form>
+          <p class="add-player" ng-show="players.length >= MAX_PLAYERS">{{lang.maxPlayers}}</p>
+          <span title="{{lang.trashCanToolTip}}" ng-dblclick="pendingPlayers = []; game.teams = []" ng-dbltouch="pendingPlayers = []; game.teams = []">
+            <svg class="trash-can" ng-drop="trashCanDrop" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" x="0px" y="0px" width="1.6em" height="1.6em" viewBox="-2 -6 32 32" enable-background="new 0 0 26 26" xml:space="preserve">
+              <path class="handle" d="M17,4.429C17,5.849,15.881,7,14.5,7h-3  C10.119,7,9,5.849,9,4.429V3.571C9,2.15,10.119,1,11.5,1h3C15.881,1,17,2.15,17,3.571V4.429z"/>
+              <line x1="9" y1="10" x2="9" y2="22"/>
+              <line x1="13" y1="10" x2="13" y2="22"/>
+              <line x1="17" y1="10" x2="17" y2="22"/>
+              <path d="M21,23c0,1.104-0.896,2-2,2H7c-1.104,0-2-0.896-2-2  V6h16V23z"/>
+              <path class="cover" d="M23,6V5c0-0.551-0.449-1-1-1H4C3.449,4,3,4.449,3,5v1H2v2h2h18h2V6H23z"/>
+            </svg>
+          </span>
+        </div>
+      </div>
+    </div>
+    <button class="main-btn" ng-click="startGame()" ng-disabled="canStart() != true">
+      <span ng-hide="canStart() == true">{{canStart()}}</span>
+      <span ng-show="canStart() == true && confirmStart != true">{{lang.startGame}}</span>
+      <span ng-show="confirmStart == true">{{lang.startGameConfirm}}</span>
+    </button>
+  </div>
+  <!-- Game panel -->
+  <div id="game-panel" ng-show="game.status == 'playing'">
+    <main>
+      <section>
+        <div id="round-panel">
+          <h2 class="title color-trtion" ng-style="{color: game.currentPlayer.team.color.hex}">{{lang.playerTurn.format(game.currentPlayer)}}</h2>
+          <h3 class="subtitle">{{lang.roundCount.format(game.round)}}</h3>
+          <form id="score-form" action="#" ng-class="{selected: tempScore >= 0 && tempScore <= 12}" ng-submit="submitScore($event)">
+            <div class="score-wheel color-trtion" ng-style="{background: game.currentPlayer.team.color.hex}">
+              <input ng-repeat-start="_ in range(12) track by $index" type="radio" ng-model="$parent.tempScore" ng-value="$index+1" id="s{{$index+1}}" name="score"  />
+              <span  ng-repeat-end><label for="s{{$index+1}}"><i>{{$index+1}}</i></label></span>
+              <input type="radio" id="s0" ng-model="tempScore" name="score" value="0" />
+              <label for="s0" class="wheel-center" ng-style="{color: game.currentPlayer.team.color.hex}">{{lang.strike}}</label>
+            </div>
+            <div class="submit-score">
+              <span ng-style="{color: game.currentPlayer.team.color.hex}">{{lang.playerScored.format(game.currentPlayer)}}</span>
+              <span ng-style="{color: game.currentPlayer.team.color.hex}">{{lang.scoredPoint.format(tempScore, tempScore > 1 ? 's' : '')}}</span>
+              <input type="submit" value="{{lang.nextRound}}" ng-style="{'border-color': game.currentPlayer.team.color.hex,
+                  color: game.currentPlayer.team.color.hex,
+                  background: game.currentPlayer.team.color.hex}" />
+              <input type="reset" value="{{lang.back}}" ng-click="tempScore = undefined" />
+            </div>
+          </form>
+          <div class="end-btn" ng-click="end()">{{lang.end}}</div>
+        </div>
+        <div id="team-stats" class="color-trtion" ng-style="{'border-color': game.currentPlayer.team.color.hex}">
+          <h2 class="title color-trtion" ng-style="{color: game.currentPlayer.team.color.hex}">{{game.currentPlayer.team}}</h2>
+          <div class="stats">
+            <div class="score">
+              <h3 class="hint">{{lang.teamScore}}</h3>
+              <div class="gauge">
+                <i>{{MAX_SCORE}}</i>
+                <i>0</i>
+                <span class="score" ng-style="{bottom: Math.min(100/MAX_SCORE*game.currentPlayer.team.score, 88)+'%'}">{{game.currentPlayer.team.score}}</span>
+                <div class="filler color-trtion" ng-style="{background: game.currentPlayer.team.color.hex, height: 100/MAX_SCORE*game.currentPlayer.team.score+'%'}"></div>
+              </div>
+            </div>
+            <div class="strikes">
+              <h3 class="hint">{{lang.teamStrikes}}</h3>
+              <div class="strike">
+                <span ng-class="{checked : game.currentPlayer.team.strike >= 1}"></span>
+                <span ng-class="{checked : game.currentPlayer.team.strike >= 2}"></span>
+                <span ng-class="{checked : game.currentPlayer.team.strike >= 3}"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      <aside id="teams-sidebar">
+        <h2>{{lang.teams}}</h2>
+        <ol class="wh-sb">
+          <li ng-repeat="team in game.teams" ng-style="{background: team.color.hex}">
+            <div class="team-stats">
+              <i class="out" ng-show="team.score == -1">{{lang.out}}</i>
+              <i class="win" ng-show="team.score == MAX_SCORE">{{(game.winningTeams.indexOf(team)+1).formatRank()}}</i>
+              <span>{{team}}</span>
+              <div>
+                <div class="gauge" title="{{lang.pointTooltip.format(team.score+'/'+MAX_SCORE)}}">
+                  <span class="score">{{Math.max(0, team.score)}}</span>
+                  <div class="filler" ng-style="{width: team.score*100/MAX_SCORE+'%', background: team.color.hex}"></div>
+                </div>
+                <div class="strike" title="{{lang.strikeTooltip.format(team.strike+'/3')}}">
+                  <span ng-class="{checked : team.strike >= 1}"></span>
+                  <span ng-class="{checked : team.strike >= 2}"></span>
+                  <span ng-class="{checked : team.strike >= 3}"></span>
+                </div>
+              </div>
+            </div>
+            <table class="player-list">
+              <tr>
+                <th>{{lang.name}}</th>
+                <th>{{lang.lastPlays}}</th>
+                <th>{{lang.score}}</th>
+              </tr>
+              <tr ng-repeat="player in team.players">
+                <td>{{player}}</td>
+                <td>{{player.getLastScores(3).join(', ')}}</td>
+                <td>{{player.score}}</td>
+              </tr>
+            </table>
+          </li>
+        </ol>
+      </aside>
+    </main>
+    <footer>
+      <div id="play-order" ng-style="{'margin-left': 45-game.roundStep*10+'vw'}">
+        <div ng-repeat="player in game.playOrder track by $index">
+          <span>{{player}}</span>
+          <span class="subtitle" ng-style="{color: player.team.color.hex}">{{player.team.name}}</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+  <!-- Ending panel -->
+  <div id="ending-panel" ng-show="game.status == 'ending'">
+    <div id="top-teams">
+      <h3 class="hint">{{lang.bestTeams}}</h3>
+      <div class="podium">
+        <!-- Top 1 - Top 4 -->
+        <div ng-repeat="_ in range(4) track by $index" ng-hide="$index == 3 && !game.winningTeams[3]">
+          <i>{{($index+1).formatRank()}}</i>
+          <span class="team-name" ng-style="{color: game.winningTeams[$index].color.hex}" ng-show="$index < game.winningTeams.length">{{game.winningTeams[$index]}}</span>
+          <span class="team-name no-team" ng-hide="$index < game.winningTeams.length">{{lang.noTeam}}</span>
+        </div>
+        <!-- Placeholder -->
+        <div ng-show="game.winningTeams.length >= 4"></div>
+      </div>
+    </div>
+    <section>
+      <aside id="team-ranking">
+        <h3 class="hint">{{lang.teamsScoreboard}}</h3>
+        <table>
+          <tr ng-repeat="_ in range(Math.max(game.winningTeams.length, 3)) track by $index">
+            <td class="center">{{($index+1).formatRank()}}</td>
+            <td ng-show="$index < game.winningTeams.length">{{game.winningTeams[$index]}}</td>
+            <td class="hint" ng-hide="$index < game.winningTeams.length">{{lang.noTeam}}</td>
+            <td>{{game.winningTeams[$index].score != -1 ? game.winningTeams[$index].score : lang.out}}</td>
+          </tr>
+        </table>
+      </aside>
+      <article id="player-ranking">
+        <h3 class="hint">{{lang.playersScoreboard}}</h3>
+        <div>
+          <table ng-repeat="_ in range(Math.ceil(game.players.length / 8)) track by $index">
+            <thead>
+              <tr>
+                <th colspan="2">{{lang.rank}}</th>
+                <th colspan="2">{{lang.name}}</th>
+                <th colspan="2">{{lang.team}}</th>
+                <th colspan="2">{{lang.score}}</th>
+                <th colspan="2"></th>
+              </tr>
+            </thead>
+            <tbody ng-repeat="player in game.players.slice($index*8, ($index+1)*8)"
+              ng-class="{open: isOpen}">
+              <tr ng-class="{first: player.rank === 1,
+                second: player.rank === 2,
+                third: player.rank === 3}"
+                ng-click="isOpen = !isOpen">
+                <td colspan="2" class="center">{{player.rank.formatRank()}}</td>
+                <td colspan="2">{{player}}</td>
+                <td colspan="2">{{player.team.name}}</td>
+                <td colspan="2" class="center">{{player.score}}</td>
+                <td colspan="2" class="center"><i title="{{lang.details}}"></i></td>
+              </tr>
+              <tr>
+                <td colspan="3" class="center">{{lang.plays}}</td>
+                <td colspan="7" class="center">
+                  <ol>
+                    <li ng-show="player.scores.length == 0" class="hint">{{lang.noPlay}}</li>
+                    <li ng-repeat="score in player.scores track by $index">{{score}}</li>
+                  </ol>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="3" class="center">{{lang.strike+'s'}}</td>
+                <td colspan="7" class="center">{{player.eachScore[0]}}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </article>
+    </section>
+    <footer>
+      <button class="main-btn" ng-click="game.reset()">{{lang.playAgain}}</button>
+    </footer>
+  </div>
+</body>
+</html>

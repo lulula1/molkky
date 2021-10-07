@@ -1,0 +1,268 @@
+.dragging {
+  opacity: .8;
+}
+
+#lobby-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  text-align: center;
+}
+#selections {
+  position: relative;
+}
+#team-selection > div {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 2.5em;
+}
+#team-selection .team-container {
+  width: 50%;
+  height: 20vh;
+  margin-bottom: 2.5em;
+}
+#team-selection .team {
+  position: relative;
+  color: white;
+  max-width: 100%;
+  width: 25em;
+  background: #999;
+  box-sizing: border-box;
+}
+#team-selection .team-container:nth-of-type(odd)  .team { border-left-width: 0; }
+#team-selection .team-container:nth-of-type(even) .team { border-right-width: 0; float: right; }
+#team-selection .team.dragging-over.drop-allow {
+  outline: .25em dashed #343d46;
+}
+#team-selection .team.no-team {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 6em;
+  color: #343d46;
+  background: transparent;
+  box-sizing: border-box;
+  border: .25em dashed #343d46;
+}
+#team-selection h2 {
+  margin: 0;
+  padding: .75em 0;
+}
+#team-selection .close-cross {
+  position: absolute;
+  top: 0.2em;
+  font-style: normal;
+  user-select: none;
+  -ms-user-select: none;
+  -moz-user-select: none;
+  -webkit-user-select: none;
+  cursor: pointer;
+}
+#team-selection .team-container:nth-of-type(odd)  .close-cross { right: 0.4em; }
+#team-selection .team-container:nth-of-type(even) .close-cross { left: 0.4em; }
+#team-selection .player-list {
+  background: rgba(0,0,0,0.33);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+#team-selection .player-list li.no-player {
+  color: #bbb;
+  font-style: italic;
+  padding: .5em;
+}
+#team-selection .player-list li pre {
+  padding: .5em .75em;
+  border: .1em dashed transparent;
+}
+#team-selection .player-list li pre.dragging {
+  color: #343d46;
+  background: #cad2db;
+  border-color: #343d46;
+}
+#team-selection .secondary-btn {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  min-width: 12em;
+  width: 25%;
+}
+
+#player-selection {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 5em;
+  display: flex;
+  flex-direction: column;
+  width: 50%;
+  margin: 0 auto;
+  color: #343d46;
+}
+#player-selection > h2 {
+  font-size: 2em;
+  margin-bottom: .5em;
+}
+#player-selection > hr {
+  border: .06em solid #343d46;
+  width: 6em;
+  margin: .5em auto;
+}
+#player-selection .pending-players {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  width: 75%;
+  margin: .5em auto 0;
+  font-weight: bold;
+  font-size: 1.25em;
+  padding: 0;
+  list-style: none;
+}
+#player-selection .pending-players li {
+  min-width: 50%;
+  margin-bottom: .5em;
+}
+#player-selection .pending-players li.no-player {
+  padding: .5em .75em;
+  font-style: italic;
+  color: #999;
+}
+#team-selection .player-list li pre,
+#player-selection .pending-players li pre {
+  position: relative;
+  display: inline-block;
+  margin: 0;
+  font-family: inherit;
+  cursor: move;
+}
+#player-selection .pending-players li span {
+  display: inline-flex;
+  background: #4e5862;
+}
+#player-selection .pending-players li pre {
+  padding: .5em .75em;
+  background: #dde6f2;
+  border: .1em dashed transparent;
+}
+#player-selection .pending-players li pre:hover,
+#player-selection .pending-players li pre.dragging {
+  background: #cad2db;
+  border-color: #343d46;
+}
+#player-selection .player-management {
+  display: flex;
+  margin: auto auto 1em;
+}
+#player-selection .add-player {
+  font-weight: bold;
+  margin: 0;
+}
+#player-selection .add-player input { font-size: 1em; }
+#player-selection p.add-player { font-size: 1.5em; }
+#player-selection .add-player input[type=text] {
+  appearance: none;
+  -ms-appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  height: 2em;
+  padding: 0 .5em;
+  box-sizing: border-box;
+  border: .125em solid #343d46;
+  border-radius: .5em 0 0 .5em;
+}
+#player-selection .add-player input[type=submit] {
+  appearance: none;
+  -ms-appearance: none;
+  -moz-appearance: none;
+  -webkit-appearance: none;
+  height: 2em;
+  color: white;
+  background: #343d46;
+  padding: .25em .5em;
+  margin-left: -.3em;
+  min-width: 5em;
+  border: 0;
+  border-radius: 0 .5em .5em 0;
+  cursor: pointer;
+}
+#player-selection .trash-can {
+  fill: none;
+  stroke: #343d46;
+  stroke-width: 1.5;
+  stroke-miterlimit: 10;
+  margin-left: 2em;
+  transform: scale(2);
+  transform-origin: 50% 65%;
+  cursor: pointer;
+}
+#player-selection .trash-can .handle,
+#player-selection .trash-can .cover {
+  transition: transform 100ms ease-in-out,
+    transform-origin 0s 100ms;
+}
+#player-selection .trash-can .cover {
+  fill: #343d46;
+  stroke: none;
+}
+#player-selection .trash-can.dragging-over .handle,
+#player-selection .trash-can.dragging-over .cover {
+  transform: rotateZ(30deg);
+  transform-origin: 65% 50%;
+  transition: transform 100ms ease-in-out,
+    transform-origin 0s 0s;
+}
+#lobby-panel .main-btn {
+  margin-top: auto;
+  width: 50%;
+}
+#lobby-panel .main-btn span { white-space: pre; }
+#lobby-panel .main-btn[disabled] {
+  background: #999;
+  opacity: .5;
+}
+
+
+@media screen and (max-width: 1023px) {
+  #selections {
+    display: flex;
+  }
+  #selections > * {
+    flex: 1;
+  }
+
+  /*#team-selection > div {
+    display: inline-block;
+    margin: 2.5em 0;
+    padding: 0 1em;
+    max-height: 65vh;
+    overflow: auto;
+  }*/
+  #team-selection .team-container {
+    width: 100%;
+    height: 12.5em;
+  }
+  #team-selection .team-container .team {
+    border-right-width: .25em !important;
+    border-left-width: .25em !important;
+    float: initial !important;
+    margin: auto !important;
+  }
+  #team-selection .team-container:nth-of-type(even) .close-cross {
+    left: unset;
+    right: .4em;
+  }
+  #team-selection .secondary-btn { position: static; }
+
+  #player-selection {
+    position: static;
+    min-height: 50em;
+  }
+  #player-selection .pending-players li { width: 100%; }
+}

@@ -59,7 +59,7 @@ class Player {
   }
   get score() {
     let score = this.scores.reduce((acc, score) => acc + score, 0); // Sum scores
-    score -= this.scores.filter(score => score == 0).length; // Remove points for strikes
+    // score -= this.scores.filter(score => score == 0).length; // Remove points for strikes
     return score;
   }
   get eachScore() {
@@ -157,7 +157,7 @@ class Color {
 // Game class
 class Game {
   static get MAX_SCORE() {return 50};   // int
-  static get STAGES() {return [0, 25]}; // int[]
+  static get STAGES() {return [0]}; // int[]
   static get MIN_TEAMS() {return 2};    // int
   static get MAX_TEAMS() {return 6};    // int
   static get MAX_PLAYERS() {return 16}; // int
